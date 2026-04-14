@@ -25,6 +25,12 @@ document.addEventListener("DOMContentLoaded", () => {
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <div class="participants-section">
+            <p><strong>Participants:</strong></p>
+            <ul>
+              ${details.participants.length > 0 ? details.participants.map(p => `<li>${p} <span class="delete-icon" data-email="${p}" data-activity="${name}">×</span></li>`).join('') : '<li>No participants yet</li>'}
+            </ul>
+          </div>
         `;
 
         activitiesList.appendChild(activityCard);
@@ -62,6 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
+        fetchActivities(); // Update the UI with the new participant
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
@@ -83,4 +90,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Initialize app
   fetchActivities();
+
+  // Handle delete participant
+  activitiesList.addEventListener("click", async (event) => {
+    const deleteIcon = event.target.closest('li')?.querySelector('.delete-icon');
+    if (deleteIcon) {
+      const email = deleteIcon.dataset.email;
+      const activity = deleteIcon.dataset.activity;
+
+      try {
+        const response = await fetch(
+          `/activities/${encodeURIComponent(activity)}/signup?email=${encodeURIComponent(email)}`,
+          {
+            method: "DELETE",
+          }
+        );
+
+        if (response.ok) {
+          // Refetch activities to update the UI
+          fetchActivities();
+        } else {
+          const result = await response.json();
+          alert(result.detail || "Failed to unregister");
+        }
+      } catch (error) {
+        alert("Failed to unregister. Please try again.");
+        console.error("Error unregistering:", error);
+      }
+    }
+  });
 });
